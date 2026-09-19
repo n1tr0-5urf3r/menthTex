@@ -1,0 +1,104 @@
+stages:
+  - verify
+  - deploy
+  - mirror
+
+variables:
+  CARGO_TERM_COLOR: always
+  DOCKERHUB_IMAGE: unituekn/menthbibtexformatter
+  VITE_BASE_PATH: /menthtex/
+
+backend_verify:
+  stage: verify
+  image: rust:1.97-trixie
+  cache:
+    key: cargo-${CI_COMMIT_REF_SLUG}
+    paths:
+      - backend/target
+      - /usr/local/cargo/registry
+      - /usr/local/cargo/git
+  before_script:
+    - cd backend
+  script:
+    - cargo test
+    - cargo build --release
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+  tags: [shared]
+
+frontend_verify:
+  stage: verify
+  image: node:22-trixie-slim
+  cache:
+    key: npm-${CI_COMMIT_REF_SLUG}
+    paths:
+      - frontend/node_modules
+  before_script:
+    - cd frontend
+    - npm ci
+  script:
+    - npm run lint
+    - npm run build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+  tags: [shared]
+
+docker_publish:
+  stage: deploy
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - export IMAGE_LATEST="docker.io/${DOCKERHUB_IMAGE}:latest"
+    - export IMAGE_SHA="docker.io/${DOCKERHUB_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+    - mkdir -p /kaniko/.docker
+    - |
+      echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"username\":\"unituekn\",\"password\":\"${DOCKERHUB_TOKEN}\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --build-arg "VITE_BASE_PATH=${VITE_BASE_PATH}"
+      --destination "${IMAGE_LATEST}"
+      --destination "${IMAGE_SHA}"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  tags: [shared]
+
+github_sync:
+  stage: mirror
+  image:
+    name: alpine/git:2.47.2
+    entrypoint: [""]
+  variables:
+    GIT_DEPTH: "0"
+  script:
+    - |
+      set -eu
+      git config user.name "GitLab mirror"
+      git config user.email "gitlab-mirror@noreply.invalid"
+      git remote remove github 2>/dev/null || true
+      git remote add github "https://x-access-token:${GITHUB_PUSH_TOKEN}@github.com/n1tr0-5urf3r/menthTex.git"
+      remote_main=$(git ls-remote --heads github refs/heads/main)
+      if [ -n "${remote_main}" ]; then
+        git fetch github main
+      fi
+
+      parent_args=
+      push_args=
+      if git show-ref --verify --quiet refs/remotes/github/main &&
+         git log -1 --format=%B github/main | grep -q '^GitLab-Source: '; then
+        parent_args="-p refs/remotes/github/main"
+      else
+        push_args=--force
+      fi
+
+      snapshot_commit=$(git commit-tree "${CI_COMMIT_SHA}^{tree}" ${parent_args} \
+        -m "Sync from GitLab ${CI_COMMIT_SHORT_SHA}" \
+        -m "GitLab-Source: ${CI_COMMIT_SHA}")
+      git push ${push_args} github "${snapshot_commit}:refs/heads/main"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  when: on_success
+  tags: [shared]

@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-menthtex}
+      POSTGRES_USER: ${POSTGRES_USER:-menthtex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-menthtex_dev_password}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-menthtex} -d ${POSTGRES_DB:-menthtex}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  menthbibtex:
+    build:
+      context: .
+      args:
+        VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
+    image: unituekn/menthbibtexformatter:latest
+    #image: menthbibtex:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "4242:3000"
+    environment:
+      PORT: "3000"
+      FRONTEND_DIST: /app/frontend-dist
+      CONFERENCES_BIB_PATH: /app/conferences.bib
+      STORAGE_ROOT: /app/storage
+      DATABASE_URL: postgresql://${POSTGRES_USER:-menthtex}:${POSTGRES_PASSWORD:-menthtex_dev_password}@postgres:5432/${POSTGRES_DB:-menthtex}
+      GITLAB_CLIENT_ID: ${GITLAB_CLIENT_ID:-}
+      GITLAB_CLIENT_SECRET: ${GITLAB_CLIENT_SECRET:-}
+      GITLAB_REDIRECT_URI: ${GITLAB_REDIRECT_URI:-}
+      GITLAB_BASE_URL: ${GITLAB_BASE_URL:-}
+      AUTHENTIK_ISSUER_URL: ${AUTHENTIK_ISSUER_URL:-}
+      AUTHENTIK_CLIENT_ID: ${AUTHENTIK_CLIENT_ID:-}
+      AUTHENTIK_CLIENT_SECRET: ${AUTHENTIK_CLIENT_SECRET:-}
+      AUTHENTIK_REDIRECT_URI: ${AUTHENTIK_REDIRECT_URI:-}
+      AUTHENTIK_GROUPS_CLAIM: ${AUTHENTIK_GROUPS_CLAIM:-groups}
+      AUTHENTIK_SCOPES: ${AUTHENTIK_SCOPES:-openid profile email}
+      AUTH_ALLOWED_GROUPS: ${AUTH_ALLOWED_GROUPS:-kn-staff,kn-esslingen}
+      GITLAB_ALLOWED_GROUPS: ${GITLAB_ALLOWED_GROUPS:-}
+      AUTH_SESSION_TTL_HOURS: ${AUTH_SESSION_TTL_HOURS:-8}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+    restart: unless-stopped
+    volumes:
+      - ./conferences.bib:/app/conferences.bib
+      - menthtex_storage:/app/storage
+
+volumes:
+  postgres_data:
+  menthtex_storage:
