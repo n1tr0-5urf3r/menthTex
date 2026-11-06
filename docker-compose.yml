@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:17-bookworm
+    image: postgres:18-bookworm
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-menthtex}
       POSTGRES_USER: ${POSTGRES_USER:-menthtex}

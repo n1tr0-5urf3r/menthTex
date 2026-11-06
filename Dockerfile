@@ -1,4 +1,4 @@
-FROM node:22-trixie-slim AS frontend-build
+FROM node:26-trixie-slim AS frontend-build
 
 WORKDIR /app/frontend
 
@@ -12,7 +12,7 @@ COPY frontend/ ./
 RUN npm run build
 
 
-FROM rust:1.97-trixie AS backend-build
+FROM rust:1.99-trixie AS backend-build
 
 WORKDIR /app/backend
 
