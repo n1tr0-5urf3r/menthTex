@@ -339,4 +339,4 @@ If this project is useful to you, you can help keep it maintained.
 
 </div>
 
-Version: **2.1.0**
+Version: **2.1.1**

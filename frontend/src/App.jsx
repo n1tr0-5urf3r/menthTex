@@ -4,7 +4,7 @@ import LoginProviderPopup from './LoginProviderPopup'
 import WorkspaceApp from './WorkspaceApp'
 import { currentRelativePath, withBasePath } from './pathUtils'
 
-const FRONTEND_VERSION = import.meta.env.VITE_APP_VERSION || '2.1.0'
+const FRONTEND_VERSION = import.meta.env.VITE_APP_VERSION || '2.1.1'
 const SAMPLE_INPUT = `@ARTICLE{10947349,
   author={Ihle, Fabian and Menth, Michael},
   journal={IEEE Open Journal of the Communications Society},

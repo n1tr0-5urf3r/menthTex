@@ -3,7 +3,7 @@ import './WorkspaceApp.css'
 import LoginProviderPopup from './LoginProviderPopup'
 import { withBasePath } from './pathUtils'
 
-const FRONTEND_VERSION = import.meta.env.VITE_APP_VERSION || '2.1.0'
+const FRONTEND_VERSION = import.meta.env.VITE_APP_VERSION || '2.1.1'
 
 function SunIcon() {
   return (
