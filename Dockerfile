@@ -12,7 +12,7 @@ COPY frontend/ ./
 RUN npm run build
 
 
-FROM rust:1.99-trixie AS backend-build
+FROM rust:1.100-trixie AS backend-build
 
 WORKDIR /app/backend
 
