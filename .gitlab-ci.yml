@@ -79,7 +79,7 @@ docker_publish:
 github_sync:
   stage: mirror
   image:
-    name: alpine/git:v2.54.0
+    name: alpine/git:v2.54.1
     entrypoint: [""]
   variables:
     GIT_DEPTH: "0"
